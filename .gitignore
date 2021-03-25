@@ -5,3 +5,5 @@
 zipped
 XX_Healthcare-SQL.R
 XX_Load-All-Files.R
+*.RDS
+*.csv
