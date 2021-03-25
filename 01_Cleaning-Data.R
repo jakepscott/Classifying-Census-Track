@@ -312,7 +312,7 @@ rm(list=c(ls(pattern = "nanda*"),"data","summarized"))
 data <- vroom("data/nanda_transit_tract_2016-2018_05P.csv")
 
 data <- data %>% 
-  select(tract_fips,count_ntm_stops) %>% 
+  select(tract_fips,count_ntm_stops, "tract_fips10"=tract_fips) %>% 
   mutate(year=2018)
 
 saveRDS(data,here("data_clean/Transit-Stops.rds"))
