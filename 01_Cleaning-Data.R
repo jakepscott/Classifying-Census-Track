@@ -17,28 +17,23 @@ select_function <- function(data) {
 # Healthcare --------------------------------------------------------------
 
 # Load the data 
-nanda_healthcare_tract_2003_2017_02P <- vroom(here("data/nanda_healthcare_tract_2003-2017_02P.csv"))
-data <- nanda_healthcare_tract_2003_2017_02P 
-
+data <- vroom(here("data/nanda_healthcare_tract_2003-2017_02P.csv"))
 
 # Only keep columns of interest. Don't use select_function() here because I need population and
 # aland10 vars
 data <- data %>% 
   select(tract_fips10,year,population,aland10,
-         ends_with("6211"), #Keep physicians columns
-         ends_with("622"), #Keep hospitals
-         ends_with("623"), #keep nursing/residential homes
-         contains("446110")) %>% #Keep pharmacies
-  select(tract_fips10,year,population,aland10,
          contains("count")) %>% #Keep just the count columns
   select(tract_fips10,year,population,aland10,
          !contains("emp")) %>% #Don't keep the columns of firms with only a certain # of employees
   select(tract_fips10,year,population,aland10,
-         !contains("sales")) %>% #Don't keep the columns of firms with only a certain # of sales
-  rename("all_physicians"=count_6211,
-         "all_hospitals"=count_6211,
-         "nursing_residential_homes"=count_623,
-         "pharmacies"=count_446110)
+         !contains("sales")) %>% 
+  select(tract_fips10,year,population,aland10,
+         "all_physicians"=ends_with("6211"), #Keep physicians columns
+         "all_hospitals"=ends_with("622"), #Keep hospitals
+         "nursing_residential_homes"=ends_with("623"), #keep nursing/residential homes
+         "pharmacies"=contains("446110")) #Keep pharmacies
+
 
 saveRDS(data,here("data_clean/Healthcare_Data.rds"))
 #Clean up workspace
@@ -288,8 +283,8 @@ rm(list=c(ls(pattern = "nanda*"),"data","summarized"))
 data <- vroom("data/nanda_broadband_tract_2014-2018_01P.csv")
 
 data <- data %>% 
-  rename("high_speed_broadband_providers"=tot_hs_providers) %>% 
-  select(-res_hs_providers)
+  rename("num_high_speed_broadband_providers"=tot_hs_providers) %>% 
+  select(tract_fips10,year,avg_download_speed,avg_upload_speed, num_high_speed_broadband_providers)
 
 saveRDS(data,here("data_clean/Broadband.rds"))
 
