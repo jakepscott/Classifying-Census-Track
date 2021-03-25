@@ -6,7 +6,10 @@ library(readr)
 library(vroom)
 
 # Load Data ---------------------------------------------------------------
-files <- list.files(here("data_clean/"))
+files <- list.files(here("data_clean/")) %>% 
+  as_tibble() %>% 
+  filter(value!="full_data.rds") %>% 
+  pull(value)
 
 # for (i in files) {
 #   assign(i,vroom(here(glue("data_clean//{i}"))))
@@ -22,4 +25,4 @@ for(i in files){
   rm(list=setdiff(ls(), "data"))
 }
 
-saveRDS(data,here("data_clean/full_data.rds"))
+saveRDS(data,here("full_data/full_data.rds"))
