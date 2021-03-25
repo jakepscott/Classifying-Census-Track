@@ -45,7 +45,6 @@ saveRDS(data,here("data_clean/Healthcare_Data.rds"))
 rm(list=c(ls(pattern = "nanda*"),"data"))
 
 # Non-Grocery Retailers ---------------------------------------------------
-
 nanda_retail_tract_2003_2017_01P <- vroom("data/nanda_retail_tract_2003-2017_01P.csv",
                                           col_select=!c(population,aland10))
 
@@ -63,7 +62,7 @@ summarized <- data %>%
   group_by(tract_fips10,year) %>% 
   summarise(non_grocery_retail_stores=sum(value))
 
-saveRDS(data,here("data_clean/Non-Grocery-Retailers.rds"))
+saveRDS(summarized,here("data_clean/Non-Grocery-Retailers.rds"))
 
 #Clean up workspace
 rm(list=c(ls(pattern = "nanda*"),"data"))
@@ -138,7 +137,7 @@ summarized <- data %>%
   group_by(tract_fips10,year) %>% 
   summarise(social_services=sum(count_624))
 
-saveRDS(data,here("data_clean/Social-Services.rds"))
+saveRDS(summarized,here("data_clean/Social-Services.rds"))
 
 #Clean up workspace
 rm(list=c(ls(pattern = "nanda*"),"data"))
@@ -202,7 +201,7 @@ summarized <- data %>%
   group_by(tract_fips10,year) %>% 
   summarise(personal_care_establishments=sum(value))
 
-saveRDS(data,here("data_clean/Personal-Care_Establishments.rds"))
+saveRDS(summarized,here("data_clean/Personal-Care_Establishments.rds"))
 
 #Clean up workspace
 rm(list=c(ls(pattern = "nanda*"),"data"))
