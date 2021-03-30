@@ -25,4 +25,6 @@ for(i in files){
   rm(list=setdiff(ls(), "data"))
 }
 
+
+
 saveRDS(data,here("full_data/full_data.rds"))
