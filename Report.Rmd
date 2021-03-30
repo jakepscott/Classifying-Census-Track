@@ -1,0 +1,128 @@
+---
+title: "Classifying Census Tracts"
+author: "Jake Scott"
+date: "3/25/2021"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE,error=FALSE,warning=FALSE,message=FALSE,fig.align="center")
+library(vroom)
+library(here)
+library(readr)
+library(magrittr)
+```
+
+# Motivation
+
+I have always been interested in the topic of "place." While in our globalized and deeply interconnected world it can sometimes feel like boundaries are melting away, the reality is that, for many of us, we live in a relatively limited geographic area at any given time. The few city blocks where we live, work, and play; the small town community where we grew up or grew old; the family farm where we visit the local "one-traffic light" downtown. For most of us and for most of the time, the granular geographic area we consider home is of paramount importance to our daily lives.
+
+Despite this importance of "place", we are often left working with aggregate statistics like nationwide GDP growth or statewide unemployment. Not only do these measures obscure rich place-based complexity because of their geographic aggregation, but the measures themselves miss the rich diversity of daily life. Yes GDP is important, but what about how many civic and social organizations I have access to near me? Yes unemployment is crucial, but how many social service and training organizations are nearby to help me get back on my feet? And yes nationwide trends in health care costs are crucial, but are there even hospitals within a reasonable distance of where I live? These are just a few of the countless examples of variables which are critical to quality of life but which are obscured by broad statistics aggregated over large geographic areas.
+
+Given this tension, I want my project to center around two components: I want it to 1) look at geographic units closer to the "home" scale and 2) focus on important but infrequently examined statistics, such as number of civic organizations or entertainment venues in a community.
+
+# Description
+
+The above motivation has led me to a detailed, unique, and truly excellent series of data sets collectively known as *The National Neighborhood Data Archive* (NaNDA). Administered by the [Social Environment and Health program at the University of Michigan Institute for Social Research](https://seh.isr.umich.edu/signature-projects/nanda/), the data sets housed in this collection provide a detailed picture of the nation at a granular level; all the way down to census tract, which I will mostly work with. The data sets cover aspects as wide-ranging as number of civic organizations to number of dollar stores to average broadband speed in a given census tract. Some of them look at healthcare, some look at law enforcement, and still others look at transit stops. In short, if one can combine these separate data sets into one (as I have), they can collectively paint an picture of "place" that is far more detailed than most previous analyses (Note: I discuss in more detail formatting and such in the Data Wrangling section below).
+
+# Questions
+
+As I mentioned, I am still in the preliminary stages of my investigation, and thus am hesitant to anchor myself to a single idea. However, my general goal is threefold. First, I simply want to generate a report doing some exploratory analysis with these data sets. This is a broad goal indeed, but a report showing counties by number of churches, by broadband speed, by number of entertainment venues, and so on could be very interesting and spur future research.
+
+Second, I want to use an unsupervised learning technique (such as Principal Component Analysis) to group counties in the US based on their similarity across this rich set of measures. While it is obviously far too early to say, I am very enthusiastic to see across what lines the categories fall: geographic? Demographic? Perhaps something one would not predict? This stage would culminate in a report investigating the categories and their implications.
+
+Finally, for the final assignment in this course, I'd like to make an interactive Shiny app that lets individuals explore all of these measures across all counties. I think it would be an amazing tool for one to be able to use for their own community.
+
+# Data Wrangling
+
+### Obtaining the Data
+
+The first step in data wrangling is, of course, to acquire the data itself. While I considered scripting some type of webscrapper, I ultimately decided it was faster to just download the data manually. All told, there are 16 data sets I will use in this analysis (listed below), which in my view sits right on the margin for the number where it starts to make sense to try to automate. Since, for this project, I only need to download them once, I fell on the side of manual acquisition.
+
+I obtained the data sets from [openICPSR](https://www.openicpsr.org/openicpsr/about), a public repository for social science data. The data sets by name are:
+
+1.  Arts, Entertainment, and Recreation Organizations by Census Tract, United States, 2003-2017
+2.  Broadband Internet Access by Census Tract, United States, 2014-2018
+3.  Dollar Stores by Census Tract, United States, 2003-2017
+4.  Eating and Drinking Places by Census Tract, United States, 2003-2017
+5.  Education and Training Services by Census Tract, United States, 2003-2017
+6.  Grocery Stores by Census Tract, United States, 2003-2017
+7.  Health Care Services by Census Tract, United States, 2003-2017
+8.  Law Enforcement Organizations by Census Tract, United States, 2003-2017
+9.  Liquor, Tobacco, and Convenience Stores by Census Tract, United States, 2003-2017
+10. Parks by Census Tract, United States, 2018
+11. Personal Care Services and Laundromats by Census Tract, United States, 2003-2017
+12. Post Offices and Banks by Census Tract, United States, 2003-2017
+13. Public Transit Stops by Census Tract, United States, 2016-2018
+14. Religious, Civic, and Social Organizations by Census Tract, United States, 2003-2017
+15. Retail Establishments by Census Tract, United States, 2003-2017
+16. Social Services by Census Tract, United States, 2003-2017
+
+### Unzipping
+
+Unfortunately, the data was not downloaded in a straightforward format. First, the download resulted in a zipped folder. Not only that, but the raw .csv files containing the data itself were actually in a zipped folder *within* that main zipped folder. Unzipping and extracting all of these manually would be feasible, but incredibly time consuming. Thus, I elected to do so programatically within R.
+
+I can provide the full script, but the workhorse functions were:
+
+-   `list.files()`
+
+-   `glue()`
+
+-   `file.rename()`
+
+-   `unzip()`
+
+Using these within in a loop was sufficient to pull out all the csv's I needed and place them in their own directory.
+
+### Cleaning
+
+The data was surprisingly clean off the shelf, though it was not tidy, at least not in the Tidyverse sense of the word. Each data set had a column for the census tract fips code, the year, the population, and the land area. Each set also had a series of other columns, which were what made the data not tidy. Specifically, each category of establishment (restaurant vs bar) or unit (lawyer vs judge) had its own set of columns. I say *set* of columns because for each category of unit there was a column for pure count, population adjusted count, and area adjusted count. Not only that, but for each of those category-count pairings, the researchers who compiled the data also created a raw column, a column only counting a unit if it had more than 2 employees, and a column counting a a unit only if it had some sales in the past year. For a small example of how this looks, see below.
+
+```{r}
+vroom(here("data/nanda_healthcare_tract_2003-2017_02P.csv"),
+      n_max = 10,col_select = c(1:6)) %>% 
+  kableExtra::kbl(digits = 2) %>% 
+  kableExtra::kable_styling()
+
+```
+
+Breaking down `count_sales_621` will help explain the data format. "Count" in this case means it is a count column (not adjusted for population or area). "Sales" means it is filtered such that a unit had to have sales\>0 in the given year in order for to be counted. And "621" is a NAICS code for "all ambulatory health care services, whether provided independently or within a clinic or medical center".
+
+Needless to say, some cleaning was necessary. I chose to select just the pure count columns, not adjusting for population or land area nor filtering for employees or sales. For the former, I can use my own population and land area estimates to do downstream adjustments if and when necessary. For the latter, there were too many instances where adjusting for sales in particular would not make sense (e.g. police departments) and thus the data became skewed.
+
+Since I had to do the same select operation on 16 data sets (grabbing fips, year, and then the pure unadjusted count columns), I generated a function so as to not continually repeat code. From there, I renamed the columns to make them more descriptive, and in some instances combined columns (such as number of casinos and number of casino-hotels). I saved each of these data sets in their own directory, and was ready to move to the next step.
+
+### Joining
+
+While 16 data sets to combine was initially daunting, it was actually a fairly straightforward task since each one had both a fips code column and year column. I simply wrote up a for loop that loaded each file and joined it with a `left_join()`. This left me with a complete data set with a row for each tract-year pair and a set of rich descriptive columns, most containing the count of some unit of interest for that tract (though some are averages, such as average broadband upload speed).
+
+### Aggregating
+
+My last step in terms of data wrangling was to actually go against my own motivation described at the start, at least slightly. By this I mean I aggregated from the census tract level to the county level. This is not necessarily a permanent decision, but for now it will make the data easier to work with and more interpretable, at least in the sense that those who live in the US usually know a few counties or more, whereas hardly anyone knows a single census tract identifier (myself included).
+
+To do this aggregation, I extracted the first five digits of the tract-level fips value for each census tract. This value corresponds to the county that particular census tract sits within. I then used the `tidycensus` package to get a list of counties in the US and their corresponding fips values. Then all that was necessary was to bring in the county names with `left_join(),` using the fips column to join to.
+
+As a quick validation of my aggregation and of the underlying data, I checked to see how many counties I missed. Reassuringly, I only missed 14 out of over 3,000 counties, and 11 of those 14 counties that I missed are actually outside of the 50 states themselves.
+
+```{r Missed Counties}
+read_rds(here("full_data/missed_counties.rds")) %>% 
+  kableExtra::kable() %>% 
+  kableExtra::kable_styling()
+```
+
+The final step was to use `group_by()` and `summarize()`to aggregate, grouping at he count-year level. Finally, I had the data I will be working with. Each row is a county-year pair and each column is a variable describing the county, with variables ranging from number of convenience stores to number of museums to average broadband upload/download speed. All that is left to do are aspects such as adjusting the columns for components like population size.
+
+# Plots
+
+The plots I will be generating in my analysis will depend which stage I am at: exploratory, PCA, or Shiny app. But in general, I suspect I will lean on 3 main plot types.
+
+First, I suspect I will make a series of line plots. For example, I may look at a variable like number of religious organizations per capita over time for rural, suburban, and urban counties/census tracts, mapping the rural/suburban/urban category column to the color aesthetic. I may also look at subsets of counties and see how a set of related variables change over time. For example, I may take my home county and plot a subset of 10 variables over time. I *could* map each variable to the color aesthetic, but that would likely be visually busy. To avoid that, I could instead use a `facet_wrap()` call.
+
+Second, I imagine I will use a series of bar plots and column charts. For example, I may plot a 100% chart showing the proportion of counties that have, for example, at least one hospital. I could `facet_wrap()` this by rural versus suburban versus urban counties, to see whether I can pick up the crisis of rural hospital closures in the US.
+
+Finally, I am sure I will be making many maps, particularly choropleth maps, where I map the intensity of the color of a region to some underlying variable, such as number of nursing homes. I will also make categorically colored maps. In particular, I hope to use the `leaflet` package to make an interactive map where one can hover over a county of interest and see which PCA-determined "county-category" it falls into and why.
+
+# Conclusion
+
+Ultimately, I want to paint a more holistic picture of "place" in the United States, and I believe I can do so using the NaNDA data. Thus far I have downloaded the data, extracted the necessary files, cleaned the data, joined the data, and aggregated the data. Next I will begin some exploratory plotting and further clean the data, checking for any errors.
