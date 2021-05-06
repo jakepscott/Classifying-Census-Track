@@ -44,14 +44,7 @@ data %>%
   skim()
 
 
-
-data %>% 
-  filter(year==2017) %>% 
-  slice_max(n=10, order_by = Restaurants) %>% 
-  relocate(population,.after = county) %>% 
-  View()
-
-
+# Let's compare census pop estimates to my derived values -----------------
 census_pops <- tidycensus::get_estimates(geography = "county", product = "population")
 mydata_vs_census <- data %>% 
   filter(year==2017) %>% 
@@ -59,4 +52,29 @@ mydata_vs_census <- data %>%
   left_join(census_pops %>% filter(variable=="POP"),by=c("fips"="GEOID")) %>% 
   mutate(diff=population-value)  
 
+#Not bad! My big misses on the downside are places like Maricopa Arizona which have grown since 2017 and cook county,
+# which has shrunk
 mydata_vs_census %>% View()
+
+
+# I recall hospitals being a big issue ------------------------------------
+#My data says there are 57,379 hospitals in the US. 
+# The AHA says there are only ***6,090***. So I am off by an order of 10: https://www.aha.org/statistics/fast-facts-us-hospitals
+data %>% 
+  filter(year==2017) %>% 
+  pull(all_hospitals) %>% 
+  sum()
+
+
+data %>% 
+  filter(year==2017) %>% 
+  select(where(is.numeric)) %>% 
+  map_dbl(sum) %>% 
+  as_tibble(rownames = "variable") %>% 
+  View()
+
+#I say there are 749,588 restaurants, Statisca says closer to 647,000 https://www.statista.com/statistics/244616/number-of-qsr-fsr-chain-independent-restaurants-in-the-us/#:~:text=The%20number%20of%20restaurants%20in,a%20little%20over%20two%20percent.&text=The%20two%20main%20categories%20of,full%20service%20restaurants%20(FSR'S).
+# I say there are 468,787 physicians, FSMB says 985,000 https://www.fsmb.org/siteassets/advocacy/publications/2018census.pdf
+# I say there are 38,305 colleges + universities, google says like 5k
+# A lot of mine do seem to be overestimates... maybe I should have only grabbed the cols where they verified there were some employes and/or
+# sales made..
