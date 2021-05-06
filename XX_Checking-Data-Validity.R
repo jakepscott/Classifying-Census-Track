@@ -7,21 +7,42 @@ library(skimr)
 # Load Data ---------------------------------------------------------------
 data <- read_rds(here("full_data/Full_Agg_Data.RDS"))
 
-nested_data <- data %>% 
-  select(-state) %>% 
-  group_by(state_name,county,fips,year) %>% 
-  nest()
 
+# Overview of the data ----------------------------------------------------
+#Feels like there are some absolutely wildin' values in here. One county has *7436* primary  &
+# secondary schools?? 
 data %>% skim()
+
+#Turns out these "wild" values always happen in these major cities, so maybe the aren't *too* crazy
 data %>% 
   filter(year==2017) %>% 
-  arrange(desc(liquor_tobacco_stores)) %>% 
-  View()
+  arrange(desc(Primary_and_Secondary_Schools)) 
 
+#Let's scale by pop to find out!
+# Oh boy, some of the values have now become *even worse*
+# 23163 physicians per 1000 people? 
+# 1775 hospitals per 1000 people?
+# 2566  pharmacies?
+# 63105 non-grocery retail stores?
+# 22384 personal care establishments?
+# 28281 restaurants
+# 2001     Bars?
+# etc etc
 data %>% 
   mutate(across(where(is.numeric), ~((.x/population)*1000))) %>% 
-  filter(!is.na(population)) %>% 
+  filter(!is.na(population) & population!=0) %>% 
   skim()
+
+###hmmm... looks like for those ridiculous values, we are not properly dividing by population somehow? it seems that after the population column itself 
+# things stop getting divided... maybe because the population column
+
+#A ha! The issue was we divided population by itself in the above code. Then it took that newly calculated population value (1)
+# and divided subsequent columns by it, which naturally led to issues
+data %>% 
+  mutate(across(where(is.numeric) & !contains("population"), ~((.x/population)*1000))) %>% 
+  filter(!is.na(population) & population!=0) %>% 
+  skim()
+
 
 
 data %>% 
