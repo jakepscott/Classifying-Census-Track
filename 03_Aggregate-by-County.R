@@ -31,6 +31,7 @@ saveRDS(missed,here("full_data/missed_counties.rds"))
 data_agg <- data %>% 
   #Removing these for now because these need to be averaged or maxed, not summed up
   select(-avg_download_speed,-avg_upload_speed,-any_open_park) %>%   
+  #Grab the fips code for the state+county, which is 1-5 of the tract_fips10 number
   mutate(fips=substr(tract_fips10,1,5)) %>% 
   select(-tract_fips10) %>% 
   group_by(fips,year) %>% 
